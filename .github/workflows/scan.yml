@@ -1,0 +1,42 @@
+name: Ryanair scan
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # elke 6 uur (UTC), bewust niet op het hele uur
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      # Stopt met een foutcode als Ryanair blokkeert; dan wordt er niets gecommit.
+      - name: Scan
+        run: python scan.py
+
+      - name: Commit deals.json als er iets veranderd is
+        run: |
+          git add data/deals.json
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen, niets te committen."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Scan $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push

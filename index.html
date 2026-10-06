@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ryanair deals</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #fff; --text: #1a2233; --muted: #667085; --line: #e2e5ea;
+    --accent: #0b3a8f; --accent-text: #fff; --star: #e0a100; --jaw: #b4400f; --jaw-bg: #fdeee6;
+    --ideal: #15803d; --ideal-bg: #e6f6ea; --ideal-text: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11151c; --card: #1b212b; --text: #e8ebf0; --muted: #98a2b3; --line: #2c3442;
+      --accent: #7aa7ff; --accent-text: #0b1220; --star: #f5c542; --jaw: #ffa26b; --jaw-bg: #3a2418;
+      --ideal: #4ade80; --ideal-bg: #15301f; --ideal-text: #0b1220;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 12px; }
+  h1 { font-size: 22px; margin: 0; }
+  #updated { color: var(--muted); font-size: 13px; }
+  #updated.stale { color: var(--jaw); font-weight: 600; }
+
+  .filters { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
+  .filters summary { padding: 12px 14px; font-weight: 600; cursor: pointer; }
+  .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 0 14px 14px; }
+  .field > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  input, select, button { font: inherit; color: inherit; }
+  input[type=date], input[type=search], select {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 40px; flex: 1; min-width: 0;
+  }
+  .chip {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 13px; min-height: 38px; cursor: pointer;
+  }
+  .chip[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .link-btn { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 8px 0; text-decoration: underline; }
+
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 2px 10px; color: var(--muted); }
+  .bar select { flex: 0 1 auto; }
+
+  #list { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px; }
+  .deal { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .deal.jaw { border-left: 4px solid var(--jaw); }
+  .deal.ideal { background: var(--ideal-bg); border-color: var(--ideal); }
+  .badge.ideal { background: var(--ideal); color: var(--ideal-text); letter-spacing: .04em; }
+  .chip.ideal { border-color: var(--ideal); color: var(--ideal); font-weight: 600; }
+  .chip.ideal[aria-pressed=true] { background: var(--ideal); border-color: var(--ideal); color: var(--ideal-text); }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badges:empty { display: none; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .place { font-weight: 700; font-size: 17px; line-height: 1.2; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .total { text-align: right; white-space: nowrap; font-weight: 700; font-size: 20px; line-height: 1.2; }
+  .stars { color: var(--star); font-size: 15px; letter-spacing: 1px; min-height: 18px; }
+  .leg { display: grid; grid-template-columns: 44px 1fr auto; gap: 8px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 8px; }
+  .leg .label { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+  .leg .when { color: var(--muted); font-size: 13px; }
+  .leg .price { font-variant-numeric: tabular-nums; }
+  .badge { align-self: flex-start; background: var(--jaw-bg); color: var(--jaw); border-radius: 6px; padding: 3px 8px; font-size: 12.5px; font-weight: 600; }
+  .actions { display: flex; gap: 8px; margin-top: auto; }
+  .book { flex: 1; text-align: center; background: var(--accent); color: var(--accent-text); border-radius: 8px; padding: 9px 10px; text-decoration: none; font-weight: 600; }
+  #more { display: block; margin: 16px auto; padding: 10px 22px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 10px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Ryanair deals</h1>
+    <span id="updated">Laden…</span>
+  </header>
+
+  <details class="filters" id="filters">
+    <summary>Filters</summary>
+    <div class="filter-grid">
+      <label class="field"><span>Bestemming of land</span>
+        <div class="row"><input type="search" id="q" placeholder="bv. Malaga, Italy, OPO" list="places"><datalist id="places"></datalist></div>
+      </label>
+      <div class="field"><span>Vertrek tussen</span>
+        <div class="row"><input type="date" id="dateFrom" aria-label="Vertrek vanaf"><input type="date" id="dateTo" aria-label="Vertrek tot en met"></div>
+      </div>
+      <div class="field"><span>Weekend</span>
+        <div class="row"><button type="button" class="chip ideal" id="ideal" aria-pressed="false">IDEAAL WEEKEND</button></div>
+      </div>
+      <div class="field"><span>Aantal dagen</span><div class="row" id="days"></div></div>
+      <div class="field"><span>Sterren</span><div class="row" id="stars"></div></div>
+      <div class="field"><span>Vertrek vanaf</span><div class="row" id="from"></div></div>
+      <div class="field"><span>Terug naar</span><div class="row" id="back"></div></div>
+      <label class="field"><span>Open jaw</span>
+        <div class="row"><select id="jaw">
+          <option value="all">Alles tonen</option>
+          <option value="no">Zonder open jaw</option>
+          <option value="only">Alleen open jaw</option>
+        </select></div>
+      </label>
+      <div class="field"><span>&nbsp;</span><button class="link-btn" id="reset" type="button">Filters wissen</button></div>
+    </div>
+  </details>
+
+  <div class="bar">
+    <span id="count"></span>
+    <select id="sort" aria-label="Sortering">
+      <option value="total">Totaalprijs (laag → hoog)</option>
+      <option value="out">Vertrekdatum</option>
+    </select>
+  </div>
+
+  <div id="list"></div>
+  <button id="more" type="button" hidden>Toon meer</button>
+</main>
+
+<script>
+const PAGE = 60;
+// Ideaal weekend: vrijdag vanaf 12:00 heen, zondag vanaf 17:00 terug
+const FRIDAY_FROM = "12:00", SUNDAY_FROM = "17:00";
+const $ = id => document.getElementById(id);
+
+let data, deals = [], filtered = [], shown = 0;
+// Bij de chip-filters betekent "niets gekozen" hetzelfde als "alles".
+const chosen = { days: new Set(), stars: new Set(), from: new Set(), back: new Set() };
+
+const euro = n => "€" + n.toFixed(2).replace(".", ",");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function when(iso) {  // "2026-12-12T09:20" is lokale tijd op de luchthaven
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const day = new Date(y, m - 1, d).toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" });
+  return `${day} ${y} · ${iso.slice(11)}`;
+}
+
+function weekday(iso) {  // 0 = zondag ... 5 = vrijdag
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
+function isIdealWeekend(d) {
+  return d.days === 2 &&
+    weekday(d.out) === 5 && d.out.slice(11) >= FRIDAY_FROM &&
+    weekday(d.ret) === 0 && d.ret.slice(11) >= SUNDAY_FROM;
+}
+
+function bookLink(orig, dest, dateOut, dateIn) {
+  const p = new URLSearchParams({
+    adults: 1, teens: 0, children: 0, infants: 0,
+    dateOut, dateIn: dateIn || "", isReturn: dateIn ? "true" : "false",
+    originIata: orig, destinationIata: dest,
+  });
+  return `${data.book_url}?${p}`;
+}
+
+function chips(id, options) {
+  $(id).innerHTML = options.map(([value, label]) =>
+    `<button type="button" class="chip" aria-pressed="false" data-value="${esc(value)}">${esc(label)}</button>`).join("");
+  $(id).addEventListener("click", e => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const value = chip.dataset.value, set = chosen[id];
+    set.has(value) ? set.delete(value) : set.add(value);
+    chip.setAttribute("aria-pressed", set.has(value));
+    apply();
+  });
+}
+
+function apply() {
+  const q = $("q").value.trim().toLowerCase();
+  const dateFrom = $("dateFrom").value, dateTo = $("dateTo").value, jaw = $("jaw").value;
+  const idealOnly = $("ideal").getAttribute("aria-pressed") === "true";
+  const pass = (set, value) => !set.size || set.has(String(value));
+
+  filtered = deals.filter(d =>
+    (!idealOnly || d.ideal) &&
+    pass(chosen.days, d.days) && pass(chosen.stars, d.stars) &&
+    pass(chosen.from, d.from) && pass(chosen.back, d.back) &&
+    (jaw === "all" || (jaw === "only") === d.open_jaw) &&
+    (!dateFrom || d.day >= dateFrom) && (!dateTo || d.day <= dateTo) &&
+    (!q || d.search.includes(q)));
+
+  filtered.sort($("sort").value === "out"
+    ? (a, b) => a.out.localeCompare(b.out) || a.total - b.total
+    : (a, b) => a.total - b.total || a.out.localeCompare(b.out));
+
+  $("count").textContent = `${filtered.length.toLocaleString("nl-NL")} deals`;
+  $("list").innerHTML = filtered.length ? "" : `<p class="empty">Geen deals met deze filters.</p>`;
+  shown = 0;
+  showMore();
+}
+
+function showMore() {
+  const air = data.airports;
+  const html = filtered.slice(shown, shown + PAGE).map(d => {
+    const outDay = d.out.slice(0, 10), retDay = d.ret.slice(0, 10);
+    const actions = d.open_jaw
+      ? `<a class="book" target="_blank" rel="noopener" href="${bookLink(d.from, d.dest, outDay)}">Boek heen</a>
+         <a class="book" target="_blank" rel="noopener" href="${bookLink(d.dest, d.back, retDay)}">Boek terug</a>`
+      : `<a class="book" target="_blank" rel="noopener" href="${bookLink(d.from, d.dest, outDay, retDay)}">Boek bij Ryanair</a>`;
+    return `<article class="deal${d.open_jaw ? " jaw" : ""}${d.ideal ? " ideal" : ""}">
+      <div class="top">
+        <div><div class="place">${esc(d.city)}</div>
+          <div class="sub">${esc(d.country)} · ${d.dest} · ${d.days} ${d.days === 1 ? "dag" : "dagen"}</div></div>
+        <div class="total">${euro(d.total)}<div class="stars" title="${d.stars} ster(ren)">${"★".repeat(d.stars)}</div></div>
+      </div>
+      <div class="badges">${d.ideal ? `<span class="badge ideal">IDEAAL WEEKEND</span>` : ""}${d.open_jaw ? `<span class="badge">Open jaw: heen vanaf ${esc(air[d.from])}, terug naar ${esc(air[d.back])}</span>` : ""}</div>
+      <div class="leg"><span class="label">Heen</span>
+        <div><strong>${d.from} → ${d.dest}</strong><div class="when">${when(d.out)}</div></div>
+        <span class="price">${euro(d.price_out)}</span></div>
+      <div class="leg"><span class="label">Terug</span>
+        <div><strong>${d.dest} → ${d.back}</strong><div class="when">${when(d.ret)}</div></div>
+        <span class="price">${euro(d.price_back)}</span></div>
+      <div class="actions">${actions}</div>
+    </article>`;
+  }).join("");
+  $("list").insertAdjacentHTML("beforeend", html);
+  shown = Math.min(shown + PAGE, filtered.length);
+  $("more").hidden = shown >= filtered.length;
+  $("more").textContent = `Toon meer (${(filtered.length - shown).toLocaleString("nl-NL")} over)`;
+}
+
+function showUpdated() {
+  const scanned = new Date(data.scanned_at);
+  const hours = (Date.now() - scanned) / 36e5;
+  const text = scanned.toLocaleString("nl-NL", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const stale = hours > 24;
+  $("updated").textContent = `Laatst bijgewerkt: ${text}` + (stale ? ` — ruim ${Math.floor(hours / 24)} dag(en) oud, controleer de scan` : "");
+  $("updated").classList.toggle("stale", stale);
+}
+
+async function start() {
+  try {
+    const resp = await fetch("data/deals.json", { cache: "no-cache" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    data = await resp.json();
+  } catch (err) {
+    $("updated").textContent = "";
+    $("list").innerHTML = `<p class="empty">Kon data/deals.json niet laden (${esc(err.message)}). Heeft de scan al gedraaid?</p>`;
+    return;
+  }
+
+  // Rijen omzetten naar objecten met de kolomnamen uit het bestand
+  deals = data.deals.map(row => {
+    const d = {};
+    data.columns.forEach((name, i) => d[name] = row[i]);
+    const place = data.destinations[d.dest] || { city: d.dest, country: "" };
+    d.city = place.city;
+    d.country = place.country;
+    d.day = d.out.slice(0, 10);
+    d.ideal = isIdealWeekend(d);
+    d.search = `${d.dest} ${d.city} ${d.country}`.toLowerCase();
+    return d;
+  });
+
+  const airports = Object.entries(data.airports).map(([code, name]) => [code, `${name} (${code})`]);
+  chips("days", [1, 2, 3, 4, 5, 6, 7].map(n => [n, n]));
+  chips("stars", [[2, "★★ onder €100"], [1, "★ onder €150"], [0, "Geen ster"]]);
+  chips("from", airports);
+  chips("back", airports);
+
+  const places = Object.values(data.destinations);
+  const names = [...new Set([...places.map(p => p.country), ...places.map(p => p.city)])].sort();
+  $("places").innerHTML = names.map(n => `<option value="${esc(n)}">`).join("");
+  $("dateFrom").min = $("dateTo").min = data.horizon.from;
+  $("dateFrom").max = $("dateTo").max = data.horizon.to;
+
+  for (const id of ["q", "dateFrom", "dateTo", "jaw", "sort"]) $(id).addEventListener("input", apply);
+  $("more").addEventListener("click", showMore);
+  $("ideal").addEventListener("click", e => {
+    e.target.setAttribute("aria-pressed", e.target.getAttribute("aria-pressed") !== "true");
+    apply();
+  });
+  $("reset").addEventListener("click", () => {
+    for (const id of ["q", "dateFrom", "dateTo"]) $(id).value = "";
+    $("jaw").value = "all";
+    $("ideal").setAttribute("aria-pressed", "false");
+    Object.values(chosen).forEach(set => set.clear());
+    document.querySelectorAll(".row[id] .chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+    apply();
+  });
+
+  showUpdated();
+  apply();
+}
+
+// Filters standaard open op brede schermen, ingeklapt op mobiel
+$("filters").open = window.matchMedia("(min-width: 700px)").matches;
+start();
+</script>
+</body>
+</html>
